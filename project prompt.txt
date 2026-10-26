@@ -1,0 +1,1632 @@
+
+# MASTER PROJECT PROMPT — INSTITUTE MANAGEMENT & EXAM SYSTEM
+
+## 1. Project Overview
+
+Build a complete, production-oriented **Institute Management and Examination System** using Node.js, Express.js, MongoDB Atlas Cloud, and a modern responsive frontend.
+
+The system will be managed through a single Admin account. The Admin must be able to manage students, faculty, courses, modules, batches, examination credentials, online examinations, practical code submissions, results, re-examinations, system settings, and audit logs.
+
+This must be a fully functional web application, not just a UI prototype or static dashboard.
+
+All frontend pages must be connected to working backend APIs and the MongoDB Atlas database. Forms, buttons, filters, search, tables, exam timers, Excel uploads, results, and reports must work correctly.
+
+Before implementation, inspect the project directory and existing code if available. Reuse working components where appropriate, preserve existing functionality, and implement the requirements below systematically.
+
+---
+
+## 2. Technology Stack
+
+Use the following technologies:
+
+### Frontend
+- React with Vite.
+- TypeScript where practical.
+- Tailwind CSS for styling.
+- React Router for navigation.
+- A suitable icon library such as Lucide.
+- Reusable UI components for forms, tables, dialogs, dropdowns, cards, and navigation.
+- A chart library for dashboard analytics.
+- A code editor component, such as Monaco Editor, for practical programming questions.
+
+### Backend
+- Node.js.
+- Express.js.
+- JavaScript or TypeScript, preferably TypeScript for maintainability.
+- REST API architecture.
+- Mongoose for MongoDB database operations.
+- Zod or an equivalent validation library.
+- Secure authentication and authorization middleware.
+
+### Database
+- MongoDB Atlas Cloud.
+- Store all application data in the cloud database.
+- Use environment variables for the MongoDB connection string and other secrets.
+- Never hardcode credentials or commit secrets to source control.
+
+### Additional Libraries
+- ExcelJS or a comparable library for Excel import and validation.
+- A secure password-hashing library such as bcrypt.
+- A suitable date/time library if necessary.
+- A logging library for server diagnostics.
+
+Use compatible, stable package versions and document all dependencies.
+
+---
+
+## 3. Admin Authentication and Profile
+
+The system will initially have one Admin account.
+
+Implement:
+- Admin login using an Admin ID or username and password.
+- Secure logout.
+- Protected application routes.
+- Persistent authentication across page refreshes.
+- Secure password hashing.
+- Session expiration and appropriate authentication error handling.
+- A Profile page.
+- Change Login ID or username.
+- Change password after verifying the current password.
+- Optional profile information such as Admin name and contact details.
+
+Use secure session management or short-lived access tokens with securely handled refresh tokens. Prefer HTTP-only, Secure cookies in production.
+
+Do not expose passwords, password hashes, database credentials, or exam passwords in API responses or application logs.
+
+Provide a safe first-time Admin initialization procedure using environment variables or a seed script. Do not expose a public endpoint that creates unrestricted Admin accounts.
+
+---
+
+## 4. Main Application Layout
+
+Create a professional, modern, responsive Admin dashboard.
+
+### Sidebar Navigation
+
+The sidebar must contain:
+
+1. Dashboard
+2. Students
+3. Faculty
+4. Batches
+5. Attendance
+6. Courses
+7. Exam
+8. Logs
+9. Settings
+
+Include:
+- Active navigation highlighting.
+- Collapsible sidebar where appropriate.
+- Responsive mobile navigation.
+- Page titles and breadcrumbs.
+- User profile menu.
+- Logout option.
+- Loading, empty, success, and error states.
+
+The Attendance section must remain locked or marked as "Coming Soon" for the current phase. Do not implement active attendance functionality yet.
+
+---
+
+## 5. Dashboard
+
+Create a data-driven dashboard with summary cards, charts, and useful analytics.
+
+### Required Summary Cards
+- Total Students.
+- Current Students.
+- Completed Students.
+- Cancelled Students.
+- Total Faculty Members.
+- Total Courses.
+- Active Batches.
+- Students with Pending Exams.
+- Students Who Passed.
+- Students Who Failed.
+
+### Additional Analytics
+- Student enrollment trends.
+- Current versus completed students.
+- Course-wise student distribution.
+- Batch-wise student distribution.
+- Module-wise pass/fail statistics.
+- Examination completion statistics.
+- Re-examination statistics.
+- Recent student registrations.
+- Recent examination attempts.
+- Upcoming or pending examinations, where applicable.
+
+All dashboard metrics must come from actual database records through backend APIs. Do not use hardcoded numbers or fake charts.
+
+Use appropriate date filters where useful.
+
+---
+
+## 6. Student Management
+
+Create the following subsections:
+
+- Add Student.
+- Student Reports.
+- Current Students.
+- Cancel Students.
+- Completed Students.
+
+### 6.1 Add Student
+
+Create a structured student registration form with the following fields.
+
+#### A. Personal Information
+- Student ID.
+- Full Name.
+- Address.
+- Mobile Number.
+- Parent Mobile Number.
+- Date of Birth.
+- Email — optional.
+- Education / Educational Qualification.
+
+Student IDs must be unique and generated automatically or assigned through a validated process.
+
+#### B. Course Information
+- Course selection through a dropdown populated from the Courses collection.
+- Display the selected course's available modules.
+- Allow multiple modules to be selected using checkboxes.
+- Store the selected course and module references.
+- Do not hardcode course names or module names in the frontend.
+
+#### C. Fees Information
+- Registration Fees — default value ₹100.
+- Course Fees.
+- Joining Date.
+- Course Duration.
+- Batch Type:
+  - Daily.
+  - Alternate.
+  - Weekly.
+- Batch Time.
+- Assigned Faculty, selected from the existing Faculty records.
+
+The batch options must depend on the selected batch type.
+
+#### D. Registration Behaviour
+- Validate all required fields.
+- Validate mobile number formats.
+- Email must be optional.
+- Save the student to MongoDB Atlas.
+- Display the generated Student ID after successful registration.
+- Make the student available in the appropriate reports and batch views.
+- Set the initial status to Current.
+- Record registration metadata.
+
+Use Indian Rupees for all fee-related values.
+
+### 6.2 Student Reports
+
+Display all students in a searchable, filterable table.
+
+Required features:
+- Search by Student ID.
+- Search by student name.
+- Filters for student status, course, module, batch type, batch time, and faculty.
+- Pagination.
+- Sorting.
+- Student details view.
+- Edit Student.
+- Cancel Student.
+- Access to examination results and history.
+- Export student reports where appropriate.
+
+### Student Edit and Change Reason
+
+Whenever an Admin edits student information, require a reason for the change.
+
+For important changes, display a confirmation dialog that includes:
+- The field being changed.
+- The old value.
+- The new value.
+- A mandatory reason field.
+
+Track changes to:
+- Personal information.
+- Course and modules.
+- Fees.
+- Joining date.
+- Course duration.
+- Batch type and time.
+- Assigned faculty.
+- Student status.
+
+Save the change and its audit log as part of a controlled backend operation.
+
+### 6.3 Current Students
+
+Display students whose current status is Current.
+
+Include:
+- Student ID.
+- Name.
+- Course.
+- Selected modules.
+- Faculty.
+- Batch type and time.
+- Joining date.
+- Course duration.
+- Registration fees.
+- Course fees.
+- Exam status for each selected module.
+
+### 6.4 Completed Students
+
+A student becomes academically completed when all required modules have been completed according to the configured course-completion policy.
+
+Display:
+- Student ID.
+- Name.
+- Course.
+- All assigned modules.
+- Marks for each module.
+- Practical marks.
+- Final module result.
+- Course completion date.
+
+Keep academic completion separate from passing status. A student who has completed all required exams but failed one or more modules must not automatically be treated as having passed the course.
+
+### 6.5 Cancel Students
+
+Provide a controlled student cancellation process.
+
+Require:
+- Cancellation date.
+- Cancellation reason.
+- Confirmation before cancellation.
+
+Display:
+- Student ID.
+- Name.
+- Course.
+- Joining date.
+- Cancellation date.
+- Cancellation reason.
+- Fees information.
+
+Do not permanently delete cancelled students. Preserve their historical data, examination attempts, payments or fee records if implemented, results, and audit logs.
+
+Cancelled students must not appear in active batches or be allowed to start new examinations unless an authorized administrative process restores their status.
+
+---
+
+## 7. Faculty Management
+
+Create two subsections:
+
+- Add Faculty.
+- Faculty Reports.
+
+### 7.1 Add Faculty
+
+Fields:
+- Faculty ID.
+- Full Name.
+- Address.
+- Educational Qualification.
+- Teaching Courses.
+- Teaching Modules.
+- Mobile Number.
+- Alternate Mobile Number.
+- Email.
+- Date of Birth.
+
+Requirements:
+- Generate a unique Faculty ID.
+- Validate required fields.
+- Select courses and modules from database records.
+- Save faculty data to MongoDB Atlas.
+- Make active faculty available in student registration and batch assignments.
+
+### 7.2 Faculty Reports
+
+Display all faculty members with:
+- Search by Faculty ID or name.
+- Course and module filters.
+- View faculty details.
+- Edit faculty information.
+- View assigned students.
+- View related batches.
+
+Require a reason for important edits and write the changes to the audit log.
+
+Prevent accidental removal of faculty members who are referenced by existing students or historical records. Use an appropriate active/inactive status where necessary.
+
+---
+
+## 8. Batch Management
+
+Create three batch categories:
+
+1. Daily Batches.
+2. Alternate Batches.
+3. Weekly Batches.
+
+Display only eligible Current students in active batch lists.
+
+Every batch assignment must be linked to the student, course, and applicable batch schedule.
+
+### 8.1 Daily Batches
+
+Operating days: Monday through Saturday.
+
+Available time slots:
+- 10:00 AM–11:00 AM.
+- 11:00 AM–12:00 PM.
+- 12:00 PM–1:00 PM.
+- 2:00 PM–3:00 PM.
+- 3:00 PM–4:00 PM.
+- 4:00 PM–5:00 PM.
+- 5:00 PM–6:00 PM.
+- 6:00 PM–7:00 PM.
+
+### 8.2 Alternate Batches
+
+Group A — Monday, Wednesday, Friday:
+- 10:00 AM–12:00 PM.
+- 12:00 PM–2:00 PM.
+- 3:00 PM–5:00 PM.
+- 5:00 PM–7:00 PM.
+
+Group B — Tuesday, Thursday, Saturday:
+- 10:00 AM–12:00 PM.
+- 12:00 PM–2:00 PM.
+- 3:00 PM–5:00 PM.
+- 5:00 PM–7:00 PM.
+
+### 8.3 Weekly Batches
+
+- Operating day: Saturday.
+- Duration: 4 hours.
+- Allow the applicable start and end time to be configured.
+
+### Batch Interface
+
+Provide:
+- Tabs or filters for Daily, Alternate, and Weekly.
+- Time-slot selection.
+- Day/group information.
+- Students assigned to each batch.
+- Student ID and name.
+- Course.
+- Faculty.
+- Batch timing.
+- Search and filtering.
+- Batch capacity configuration if required.
+
+Prevent invalid batch assignments and ensure that the selected batch type matches the student's assigned schedule.
+
+Store batch schedules in configurable database records rather than duplicating hardcoded rules throughout the frontend.
+
+---
+
+## 9. Attendance
+
+For the initial version:
+- Keep the Attendance section locked.
+- Display a clear "Coming Soon" or "Currently Disabled" state.
+- Do not create active attendance workflows or attendance records yet.
+- Keep the code structure extensible for future implementation.
+
+---
+
+## 10. Course Management
+
+Create three subsections:
+
+1. Add Course.
+2. Edit Courses.
+3. Course Data.
+
+### 10.1 Add Course
+
+Fields:
+- Course Title.
+- Optional Course Description.
+- One or more Modules.
+
+Requirements:
+- Generate a unique Course ID.
+- Support multiple modules per course.
+- Allow modules to be added through a structured form.
+- Validate duplicate names according to the selected course/module rules.
+- Store courses and modules in MongoDB Atlas.
+
+Create a suitable data model that allows modules to be reused or independently managed where appropriate.
+
+### 10.2 Edit Courses
+
+Allow the Admin to:
+- View existing courses.
+- Edit the course title.
+- Edit course descriptions.
+- Add modules.
+- Rename modules.
+- Remove modules from a course when safe to do so.
+
+Important:
+- Existing student enrollments and historical exams must not be silently modified or corrupted.
+- Do not delete historical modules referenced by examination attempts or results.
+- Require confirmation and record a reason for significant changes.
+- Use a controlled versioning or snapshot strategy when changes could affect historical records.
+
+### 10.3 Course Data
+
+Display:
+- Course ID.
+- Course title.
+- Description.
+- Module list.
+- Number of enrolled students.
+- Active/inactive status where appropriate.
+
+Provide search, filters, and a detailed course view.
+
+---
+
+# 11. Examination Management
+
+Create these subsections:
+
+1. Exam Form.
+2. Student Details.
+3. Start Exam.
+4. Recent Exams.
+5. Exam Logs.
+6. Results.
+7. Re-Exam.
+
+Every examination must be associated with a valid student enrollment, course, module, exam attempt, and question set.
+
+Only eligible students with valid exam credentials and access to the selected module can start an exam.
+
+---
+
+## 12. Exam Form — Generate Examination Credentials
+
+Create an interface where the Admin can enter a Student ID and retrieve the student's details.
+
+Display:
+- Student ID.
+- Student Name.
+- Course.
+- Assigned modules.
+- Exam eligibility.
+- Existing module examination status.
+
+Allow the Admin to generate examination credentials for the student.
+
+Requirements:
+- Generate a unique Exam ID or username.
+- Generate a secure, sufficiently random initial password.
+- Link the credentials to the correct student.
+- Apply access restrictions to eligible modules.
+- Prevent unauthorized access to another student's exams.
+- Provide a secure credential reset process.
+- Log credential generation and resets without recording plaintext passwords.
+
+Use secure credential storage. Prefer a dedicated exam-access mechanism that can be revoked and does not expose the Admin's own account credentials.
+
+---
+
+## 13. Student Details — Examination Accounts
+
+Provide a searchable list of students with examination credentials.
+
+Features:
+- Search by Student ID.
+- Display student name.
+- Display Course.
+- Display Exam ID.
+- Show assigned modules.
+- Show completed modules.
+- Show pending modules.
+- Show eligibility and account status.
+- Allow authorized credential resets.
+
+Never display stored passwords in plaintext.
+
+---
+
+## 14. Start Exam — Student Examination Interface
+
+Build a dedicated examination interface that is separate from the Admin dashboard.
+
+### 14.1 Exam Login
+
+Display:
+- Exam ID input.
+- Password input.
+- Start/Login button.
+- Validation errors.
+
+After successful authentication, display:
+- Student name.
+- Student ID.
+- Course title.
+- Assigned modules.
+- Completed modules.
+- Pending modules.
+- Eligibility status.
+
+### 14.2 Module-wise Examination
+
+Each assigned module must have an independent examination.
+
+For each module:
+- Allow the student to start the exam.
+- Display the module name.
+- Create a unique exam attempt.
+- Select questions from the corresponding module's question bank.
+- Save the exact question set for that attempt.
+- Maintain answers and examination status independently.
+
+Once a module exam has been completed, display it as Completed and prevent it from being retaken through the normal exam flow.
+
+A failed module can be made available through the Re-Exam workflow.
+
+### 14.3 Resume Interrupted Exams
+
+If a student closes the browser, refreshes the page, or temporarily loses connectivity:
+- Restore the active attempt if it is still valid.
+- Restore saved answers.
+- Restore the original question order.
+- Restore the remaining time using server-side timestamps.
+- Do not reset the one-hour timer by refreshing or logging in again.
+
+An active exam must not create a new random question set each time the page reloads.
+
+### 14.4 Examination Security
+
+- Validate exam eligibility on the server.
+- Never send correct answers to the student-facing API.
+- Calculate objective marks on the server.
+- Prevent duplicate submissions.
+- Enforce the examination deadline on the server.
+- Reject unauthorized attempts to access another student's exam.
+- Save exam submissions transactionally or with equivalent safeguards.
+- Maintain an immutable history of completed attempts.
+
+Do not rely exclusively on frontend JavaScript for examination security or timing.
+
+---
+
+# 15. Excel Question Bank
+
+Create a Question Bank section under Settings.
+
+The Admin must be able to upload one Excel workbook for each module.
+
+Each workbook must contain four worksheets with these exact names:
+
+1. Basic
+2. Mid
+3. Advanced
+4. Practical
+
+Allow the system to associate each workbook with the correct course/module.
+
+### 15.1 Basic, Mid, and Advanced Worksheet Format
+
+Required columns:
+
+1. Question No.
+2. Question.
+3. A Option.
+4. B Option.
+5. C Option.
+6. D Option.
+7. Correct Option.
+
+The correct option must be validated as A, B, C, or D.
+
+### 15.2 Practical Worksheet Format
+
+Required columns:
+
+1. Question No.
+2. Question.
+
+Practical questions require a free-form code answer. Do not create multiple-choice options for Practical questions.
+
+### 15.3 Excel Upload and Validation
+
+Implement:
+- Upload Excel workbook.
+- Select the associated course/module.
+- Validate worksheet names.
+- Validate required columns.
+- Validate missing questions.
+- Validate duplicate question numbers.
+- Validate correct-option values.
+- Validate question counts.
+- Preview questions before importing.
+- Show useful row-level validation errors.
+- Import valid question data into MongoDB Atlas.
+- Update or replace the existing question bank through an explicit confirmation workflow.
+- Preserve historical exam question snapshots.
+
+Never execute code imported from Excel.
+
+For safety and performance, use limits on file size, worksheet size, and accepted formats.
+
+---
+
+# 16. Examination Question Selection
+
+For each standard module examination, select exactly 42 questions:
+
+| Section | Number of Questions |
+|---|---:|
+| Basic | 10 |
+| Mid | 10 |
+| Advanced | 20 |
+| Practical | 2 |
+| Total | 42 |
+
+Requirements:
+- Select questions randomly from the correct module's question bank.
+- Do not repeat any question within the same exam attempt.
+- Save the selected question IDs and their order when the attempt begins.
+- Use server-side random selection.
+- Do not reveal the correct answers to the frontend.
+- A new authorized attempt must receive a new eligible random set.
+- If a section does not contain enough eligible questions, do not start the examination. Display a useful error to the Admin.
+
+Randomization must be independent for each module.
+
+The exact question distribution is a mandatory requirement for the standard examination. If the question bank does not contain enough unique questions, the system must report the shortage rather than silently changing the number of questions.
+
+---
+
+# 17. Exam Screen — User Interface and Controls
+
+Build a clean, distraction-free exam screen.
+
+### Header
+- Student name.
+- Student ID.
+- Course title.
+- Current module.
+- Remaining time.
+
+### Timer
+- Duration: 60 minutes.
+- Display a live countdown.
+- Use server-controlled timing.
+- Do not reset the timer on refresh or reconnect.
+- Automatically close and submit the exam when time expires, subject to the server's final deadline validation.
+
+### Question Area
+For Basic, Mid, and Advanced questions:
+- Question number.
+- Question text.
+- Four options.
+- Radio-button selection.
+- Save & Next.
+- Next.
+- Previous.
+
+For Practical questions:
+- Display the programming question.
+- Display a code editor.
+- Allow the student to write code.
+- Save the source code as the answer.
+- Do not display multiple-choice options.
+
+### Question Navigator
+
+Display 42 clickable question boxes numbered 1–42.
+
+Use visual indicators for:
+- Current question.
+- Answered question.
+- Unanswered question.
+- Flagged question, if implemented.
+
+Clicking a box must navigate to that question.
+
+### Answer Saving
+- Save answers when navigating.
+- Provide explicit Save & Next functionality.
+- Persist answers on the server.
+- Restore saved answers after reconnecting.
+- Clearly indicate saving errors.
+- Prevent a lost network connection from silently discarding answers.
+
+### Submission
+- Provide a Submit Exam button.
+- Show a confirmation dialog before submission.
+- Show a summary of answered and unanswered questions.
+- Allow the student to return to the exam before confirming.
+- Submit the attempt once.
+- Auto-submit at the deadline.
+- Display a confirmation page after successful submission.
+
+Use the question navigator to accurately reflect answer status.
+
+---
+
+# 18. Recent Exams
+
+Display students whose examinations are still in progress or who have pending modules.
+
+Include:
+- Student ID.
+- Student name.
+- Course.
+- Completed modules.
+- Pending modules.
+- Active examination status.
+- Last exam date and time.
+- Current attempt status.
+
+A student must not appear as having a pending module if the relevant requirement has been satisfied.
+
+Completed module exams must remain completed unless an authorized Re-Exam is created for a failed module.
+
+---
+
+# 19. Exam Logs
+
+Create a detailed examination history.
+
+Display:
+- Exam Attempt ID.
+- Student ID.
+- Student name.
+- Course.
+- Module.
+- Attempt type: Regular or Re-Exam.
+- Start date and time.
+- Submission date and time.
+- Time taken.
+- Total questions.
+- Answered questions.
+- Unanswered questions.
+- Objective questions answered correctly.
+- Objective questions answered incorrectly.
+- Attempt status.
+- Deadline or auto-submission status.
+
+Use consistent server timestamps.
+
+Record important events such as:
+- Exam started.
+- Answer saved.
+- Exam resumed.
+- Exam submitted.
+- Exam automatically submitted.
+- Practical answer submitted.
+- Results finalized.
+
+Provide search, filters, sorting, and pagination.
+
+Do not log plaintext passwords, correct-answer payloads, or other sensitive authentication information.
+
+---
+
+# 20. Results Management
+
+Create two subsections:
+
+1. Check Results.
+2. All Results.
+
+## 20.1 Objective Question Evaluation
+
+Automatically evaluate Basic, Mid, and Advanced questions using the correct options stored on the server.
+
+Requirements:
+- Compare submitted answers against the correct answers.
+- Calculate marks using the configured scoring rules.
+- Save the objective evaluation.
+- Prevent unauthorized modifications to finalized objective marks.
+- Maintain a history if an authorized correction is required.
+
+## 20.2 Practical Question Evaluation
+
+The final two questions are Practical coding questions and must be reviewed by the Admin.
+
+Create a review interface showing:
+- Student ID.
+- Student name.
+- Course.
+- Module.
+- Exam Attempt ID.
+- Practical Question 1.
+- Student's submitted code for Question 1.
+- Practical Question 2.
+- Student's submitted code for Question 2.
+
+For each practical question, the Admin must be able to:
+- Mark the answer Correct or Wrong.
+- Assign marks within the configured maximum.
+- Add an optional evaluation comment.
+- Save the evaluation.
+- Submit the completed practical evaluation.
+
+The backend must validate the marks and ensure that the same practical submission cannot be finalized multiple times without an authorized correction workflow.
+
+Store the evaluator, evaluation time, awarded marks, and comments.
+
+## 20.3 All Results
+
+Provide a search field for Student ID.
+
+Display all module results for the selected student.
+
+For each module, show:
+- Module name.
+- Basic marks.
+- Mid marks.
+- Advanced marks.
+- Practical marks.
+- Total marks.
+- Maximum possible marks.
+- Percentage, where applicable.
+- Pass/Fail status.
+- Exam date.
+- Attempt type.
+- Re-Exam marks and status, if applicable.
+
+### Passing Rule
+
+The minimum passing score is 40 marks per module.
+
+- A score of 40 or above means Pass.
+- A score below 40 means Fail.
+
+The system must support a configurable scoring scheme and calculate marks consistently.
+
+The total possible score must be defined by the scoring configuration. Do not assume that the total is 100 unless the Admin's configuration or the approved scoring rules specify it.
+
+The practical score must be included before finalizing the module result.
+
+A module result must remain Pending Review until all required evaluation components, including practical evaluation, have been completed.
+
+---
+
+# 21. Re-Exam Management
+
+Allow re-examination only for modules in which the student's finalized valid result is below 40 marks.
+
+Features:
+- Search by Student ID.
+- Display student details.
+- Display course.
+- Display failed modules.
+- Display previous marks.
+- Select an eligible failed module.
+- Generate a new Re-Exam Attempt.
+- Select a fresh random question set.
+- Enforce a one-hour timer.
+- Save answers independently.
+- Evaluate objective questions automatically.
+- Require Admin review for practical questions.
+- Finalize the Re-Exam result.
+
+### Re-Exam Rules
+- Do not allow Re-Exam for a passed module through the standard workflow.
+- Do not overwrite the previous attempt or result.
+- Keep all previous marks and attempts available.
+- Record the reason and authorizing Admin for exceptional corrections.
+- Display the latest attempt and full history.
+- Update the current module status after the new result is finalized.
+
+Use a consistent result policy. Unless configured otherwise, the latest finalized valid attempt determines the current module status, while all historical results remain available.
+
+---
+
+# 22. Audit Logs
+
+The Logs section must provide a reliable, append-only history of important application changes.
+
+Log events involving:
+- Student creation.
+- Student profile edits.
+- Fee changes.
+- Course and module assignment changes.
+- Batch changes.
+- Faculty assignment changes.
+- Student cancellation and restoration.
+- Faculty creation and edits.
+- Course and module changes.
+- Exam credential generation and resets.
+- Question bank uploads and replacements.
+- Exam attempts and submissions.
+- Practical mark evaluations.
+- Result finalization.
+- Authorized result corrections.
+- Re-Exam creation.
+- Settings changes.
+
+### Audit Log Fields
+- Log ID.
+- Actor/Admin ID.
+- Actor name or username.
+- Action type.
+- Entity type.
+- Entity ID.
+- Previous values where appropriate.
+- New values where appropriate.
+- Mandatory reason for sensitive changes.
+- Timestamp.
+- Request or correlation ID where appropriate.
+
+### Audit Requirements
+- Sensitive changes must require a reason.
+- Logs must be created by the backend, not trusted from frontend-submitted data.
+- Logs must not be editable or deletable through normal application routes.
+- Store structured change data where appropriate.
+- Restrict access to logs.
+- Avoid recording passwords, secrets, or unnecessary personal information.
+- Record result corrections and practical mark changes with a clear history.
+
+Use database transactions where supported and appropriate to ensure that important changes and their audit records remain consistent.
+
+---
+
+# 23. Settings
+
+Create a Settings page with the following sections:
+
+### General Settings
+- Institute name and information.
+- Basic application configuration.
+- Default registration fee: ₹100.
+- Examination settings.
+- Profile and account settings.
+- Question Bank management.
+
+### Question Bank Management
+- List courses and modules.
+- Upload Excel workbook for a module.
+- View uploaded workbook metadata.
+- Preview imported questions.
+- Validate question distribution.
+- Replace a workbook after confirmation.
+- Show upload date and time.
+- Show the number of questions in each section.
+- Display import errors.
+
+### Exam Settings
+Allow authorized configuration of:
+- Exam duration, default 60 minutes.
+- Minimum passing marks, default 40.
+- Marks per question or per section.
+- Practical question maximum marks.
+- Number of questions required from each section, with the default distribution fixed to 10 Basic, 10 Mid, 20 Advanced, and 2 Practical for the standard exam.
+- Re-Exam eligibility rules.
+- Relevant examination availability settings.
+
+If a configuration change would affect an active or historical exam, apply it only to future attempts unless an explicit authorized migration is performed.
+
+---
+
+# 24. Recommended MongoDB Data Models
+
+Design a normalized and maintainable set of MongoDB collections using Mongoose schemas, validation, indexes, and references.
+
+At minimum, consider the following collections:
+
+### 24.1 Admins
+Fields:
+- _id.
+- adminId.
+- username.
+- passwordHash.
+- profile.
+- status.
+- createdAt.
+- updatedAt.
+
+### 24.2 Students
+Fields:
+- _id.
+- studentId.
+- personalInfo:
+  - name.
+  - address.
+  - mobile.
+  - parentMobile.
+  - dateOfBirth.
+  - email.
+  - education.
+- enrollment:
+  - courseId.
+  - courseTitleSnapshot.
+  - moduleIds.
+  - moduleSnapshots where necessary.
+  - joiningDate.
+  - courseDuration.
+  - batchType.
+  - batchId or batch schedule reference.
+  - facultyId.
+- fees:
+  - registrationFee.
+  - courseFee.
+- status: CURRENT, CANCELLED, COMPLETED, or another clearly defined status model.
+- cancellationDetails.
+- completionDetails.
+- createdAt.
+- updatedAt.
+
+Use appropriate subdocuments or related collections when necessary. Do not duplicate unnecessary information.
+
+### 24.3 Faculties
+Fields:
+- _id.
+- facultyId.
+- name.
+- address.
+- education.
+- mobile.
+- alternateMobile.
+- email.
+- dateOfBirth.
+- teachingCourseIds.
+- teachingModuleIds.
+- status.
+- createdAt.
+- updatedAt.
+
+### 24.4 Courses
+Fields:
+- _id.
+- courseId.
+- title.
+- description.
+- moduleIds.
+- version.
+- status.
+- createdAt.
+- updatedAt.
+
+### 24.5 Modules
+Fields:
+- _id.
+- moduleId.
+- courseId or applicable course references.
+- title.
+- version.
+- status.
+- questionBankReference.
+- createdAt.
+- updatedAt.
+
+Choose either reusable modules or course-specific modules based on a consistent domain model. Ensure that renaming a module does not corrupt historical examination data.
+
+### 24.6 Batches
+Fields:
+- _id.
+- batchId.
+- name or slot identifier.
+- batchType: DAILY, ALTERNATE, WEEKLY.
+- applicableDays.
+- alternateGroup where applicable.
+- startTime.
+- endTime.
+- durationMinutes.
+- facultyId where appropriate.
+- status.
+- createdAt.
+- updatedAt.
+
+### 24.7 QuestionBanks
+Fields:
+- _id.
+- courseId.
+- moduleId.
+- version.
+- sourceFileName.
+- uploadedAt.
+- uploadedBy.
+- status.
+- sectionCounts.
+- importSummary.
+
+### 24.8 Questions
+Fields:
+- _id.
+- questionBankId.
+- courseId.
+- moduleId.
+- section: BASIC, MID, ADVANCED, PRACTICAL.
+- questionNumber.
+- questionText.
+- options for objective questions.
+- correctOption stored privately for objective questions.
+- maximumMarks or applicable scoring configuration.
+- status.
+- createdAt.
+- updatedAt.
+
+Practical questions must not require objective options or a correctOption field.
+
+### 24.9 ExamCredentials
+Fields:
+- _id.
+- examUsername or examId.
+- studentId reference.
+- secure password hash or equivalent secure credential representation.
+- allowedModuleIds.
+- status.
+- expiresAt if applicable.
+- createdAt.
+- updatedAt.
+
+Never store plaintext passwords.
+
+### 24.10 ExamAttempts
+Fields:
+- _id.
+- attemptId.
+- studentId.
+- courseId.
+- moduleId.
+- attemptType: REGULAR or REEXAM.
+- questionBankVersion.
+- selectedQuestions.
+- questionOrder.
+- startTime.
+- deadline.
+- submissionTime.
+- durationSeconds.
+- answers.
+- attemptStatus.
+- objectiveEvaluation.
+- practicalEvaluationStatus.
+- createdAt.
+- updatedAt.
+
+Selected question snapshots must preserve the actual exam presented to the student, even if the question bank changes later.
+
+### 24.11 PracticalEvaluations
+Fields:
+- _id.
+- attemptId.
+- studentId.
+- moduleId.
+- questionEvaluations.
+- awardedMarks.
+- maximumMarks.
+- comments.
+- evaluatedBy.
+- evaluatedAt.
+- status.
+- correctionHistory where required.
+
+### 24.12 ModuleResults
+Fields:
+- _id.
+- studentId.
+- courseId.
+- moduleId.
+- latestValidAttemptId.
+- objectiveMarks.
+- practicalMarks.
+- totalMarks.
+- maximumMarks.
+- passingMarks.
+- status: PENDING_REVIEW, PASS, or FAIL.
+- finalizedAt.
+- updatedAt.
+
+Historical attempts and previous results must remain accessible. If a materialized result document is used, keep it synchronized with finalized attempts through controlled backend logic.
+
+### 24.13 AuditLogs
+Fields:
+- _id.
+- actorId.
+- actorType.
+- action.
+- entityType.
+- entityId.
+- previousValues.
+- newValues.
+- reason.
+- requestId.
+- timestamp.
+
+Treat audit logs as append-only.
+
+Use indexes for frequently searched fields such as studentId, facultyId, courseId, moduleId, examId, status, and relevant timestamps.
+
+Apply unique indexes to identifiers that must be unique. Use MongoDB transactions where available and appropriate for multi-document operations.
+
+Do not create collections for prescription items, medicines, patient records, or unrelated medical CRM functionality. This is an institute management and examination system.
+
+---
+
+# 25. Backend API Architecture
+
+Use a versioned REST API prefix such as `/api/v1`.
+
+Create organized routes, controllers, services, models, validation schemas, and middleware.
+
+Suggested endpoints:
+
+### Authentication
+- POST `/api/v1/auth/login`
+- POST `/api/v1/auth/logout`
+- GET `/api/v1/auth/me`
+- POST `/api/v1/auth/change-credentials`
+
+### Dashboard
+- GET `/api/v1/dashboard/summary`
+- GET `/api/v1/dashboard/analytics`
+
+### Students
+- POST `/api/v1/students`
+- GET `/api/v1/students`
+- GET `/api/v1/students/:id`
+- PATCH `/api/v1/students/:id`
+- POST `/api/v1/students/:id/cancel`
+- GET `/api/v1/students/:id/results`
+- GET `/api/v1/students/:id/exam-history`
+
+### Faculty
+- POST `/api/v1/faculty`
+- GET `/api/v1/faculty`
+- GET `/api/v1/faculty/:id`
+- PATCH `/api/v1/faculty/:id`
+
+### Courses and Modules
+- POST `/api/v1/courses`
+- GET `/api/v1/courses`
+- GET `/api/v1/courses/:id`
+- PATCH `/api/v1/courses/:id`
+- GET `/api/v1/modules`
+- POST `/api/v1/modules`
+- PATCH `/api/v1/modules/:id`
+
+### Batches
+- GET `/api/v1/batches`
+- POST `/api/v1/batches`
+- PATCH `/api/v1/batches/:id`
+- GET `/api/v1/batches/:id/students`
+
+### Question Bank
+- POST `/api/v1/question-banks/upload`
+- GET `/api/v1/question-banks`
+- GET `/api/v1/question-banks/:id`
+- POST `/api/v1/question-banks/:id/validate`
+- POST `/api/v1/question-banks/:id/replace`
+
+### Exam Credentials and Student Exam Access
+- POST `/api/v1/exam-credentials`
+- GET `/api/v1/exam-credentials`
+- POST `/api/v1/exam-credentials/:id/reset`
+- POST `/api/v1/exam-access/login`
+- GET `/api/v1/exam-access/me`
+
+### Exam Attempts
+- POST `/api/v1/exams/attempts/start`
+- GET `/api/v1/exams/attempts/:id`
+- PATCH `/api/v1/exams/attempts/:id/answers`
+- POST `/api/v1/exams/attempts/:id/resume`
+- POST `/api/v1/exams/attempts/:id/submit`
+
+### Recent Exams and Exam Logs
+- GET `/api/v1/exams/recent`
+- GET `/api/v1/exams/logs`
+
+### Results and Practical Evaluation
+- GET `/api/v1/results`
+- GET `/api/v1/results/student/:studentId`
+- GET `/api/v1/results/pending-practical`
+- POST `/api/v1/results/:attemptId/practical-evaluation`
+- POST `/api/v1/results/:attemptId/finalize`
+
+### Re-Exams
+- GET `/api/v1/reexams/eligible`
+- POST `/api/v1/reexams`
+- GET `/api/v1/reexams/history/:studentId`
+
+### Settings and Logs
+- GET `/api/v1/settings`
+- PATCH `/api/v1/settings`
+- GET `/api/v1/audit-logs`
+
+These endpoints are a suggested starting architecture. Adjust them when necessary to maintain clear authorization boundaries, validation, secure exam access, and data consistency.
+
+Every endpoint must validate incoming data and return consistent error responses.
+
+Use appropriate HTTP status codes and avoid exposing stack traces or internal secrets in production.
+
+---
+
+# 26. Security and Data Integrity
+
+Implement the following requirements:
+
+- Hash all passwords securely.
+- Protect Admin routes.
+- Validate exam credentials independently from Admin authentication.
+- Validate every student, course, module, and batch reference on the backend.
+- Use parameterized Mongoose queries and avoid unsafe query construction.
+- Validate and sanitize user input.
+- Apply file upload size and file type restrictions.
+- Rate-limit authentication and sensitive endpoints.
+- Apply secure HTTP headers and an appropriate CORS policy.
+- Prevent unauthorized changes to exam answers and finalized marks.
+- Keep the correct answers private from students.
+- Enforce exam timing on the server.
+- Prevent duplicate submissions and invalid exam attempts.
+- Preserve historical exam attempts and results.
+- Use append-only audit logs.
+- Handle database errors and transaction failures safely.
+- Do not expose MongoDB Atlas credentials to the frontend.
+- Provide a secure environment configuration template.
+- Use HTTPS in production.
+- Avoid logging passwords, tokens, or sensitive information.
+
+All critical business rules must be enforced on the backend, even if the frontend already validates them.
+
+---
+
+# 27. Frontend Quality and User Experience
+
+Create a professional education-management dashboard suitable for daily institute operations.
+
+Design requirements:
+- Modern, clean administrative interface.
+- Consistent typography and spacing.
+- Professional sidebar and top navigation.
+- Summary cards and meaningful charts.
+- Responsive tables.
+- Reusable forms and modal dialogs.
+- Proper validation messages.
+- Confirmation dialogs for destructive actions.
+- Loading indicators and skeleton states.
+- Empty states when no records exist.
+- Error messages for failed API requests.
+- Toast notifications for successful operations.
+- Search, filters, sorting, and pagination.
+- Accessible form labels and keyboard navigation.
+- Mobile-responsive layouts.
+
+Do not create decorative controls that do nothing. Every visible button, dropdown, filter, form, and navigation item must perform its intended function or clearly indicate that the feature is disabled.
+
+Use realistic data only in development seed scripts. The production dashboard must use real database data.
+
+---
+
+# 28. Reports and Export
+
+Where appropriate, provide:
+- Student report export.
+- Faculty report export.
+- Course and batch reports.
+- Examination history reports.
+- Results reports.
+- Audit log filtering and export for authorized users.
+
+Use Excel exports when useful.
+
+Exports must respect the currently selected filters and must not accidentally include unrelated records.
+
+Do not export passwords, password hashes, or confidential answer keys.
+
+---
+
+# 29. Testing Requirements
+
+Create tests for important business rules.
+
+At minimum, verify:
+
+1. Admin authentication and credential changes.
+2. Student registration and unique Student IDs.
+3. Course and module selection.
+4. Faculty and batch assignments.
+5. Student editing with mandatory reasons.
+6. Audit log creation.
+7. Student cancellation and historical record preservation.
+8. Excel workbook validation and import.
+9. Exact question distribution: 10 Basic, 10 Mid, 20 Advanced, 2 Practical.
+10. No duplicate questions within a single exam attempt.
+11. Exam timer and server-side deadline enforcement.
+12. Saving and resuming an interrupted examination.
+13. Automatic evaluation of objective questions.
+14. Practical evaluation and mark validation.
+15. Passing score of 40 marks.
+16. Re-Exam eligibility.
+17. Historical attempt and result preservation.
+18. Authorization and prevention of cross-student exam access.
+19. MongoDB connection failures and API error handling.
+20. Dashboard metrics calculated from actual records.
+
+Provide a practical manual testing checklist for the Admin interface and student examination interface.
+
+---
+
+# 30. Project Structure
+
+Use a clean and maintainable project structure.
+
+Suggested structure:
+
+```text
+institute-management-system/
+├── client/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── layouts/
+│   │   ├── pages/
+│   │   │   ├── auth/
+│   │   │   ├── dashboard/
+│   │   │   ├── students/
+│   │   │   ├── faculty/
+│   │   │   ├── batches/
+│   │   │   ├── courses/
+│   │   │   ├── exams/
+│   │   │   ├── results/
+│   │   │   ├── logs/
+│   │   │   └── settings/
+│   │   ├── services/
+│   │   ├── hooks/
+│   │   ├── types/
+│   │   ├── utils/
+│   │   └── App.tsx
+│   └── package.json
+├── server/
+│   ├── src/
+│   │   ├── config/
+│   │   ├── models/
+│   │   ├── controllers/
+│   │   ├── services/
+│   │   ├── routes/
+│   │   ├── middleware/
+│   │   ├── validators/
+│   │   ├── utils/
+│   │   ├── jobs/
+│   │   ├── tests/
+│   │   └── app.ts
+│   ├── scripts/
+│   ├── package.json
+│   └── tsconfig.json
+├── .env.example
+├── .gitignore
+├── README.md
+└── package.json
+```
+
+You may adjust the structure if the final architecture requires it, but keep frontend and backend responsibilities clearly separated.
+
+---
+
+# 31. Deployment and Documentation
+
+The application must be ready for deployment.
+
+Provide:
+- MongoDB Atlas setup instructions.
+- Database connection configuration.
+- Environment variable documentation.
+- Admin initialization instructions.
+- Local development instructions.
+- Frontend and backend startup commands.
+- Production build instructions.
+- Deployment instructions for the selected hosting platforms.
+- API documentation.
+- Database collection documentation.
+- Backup and recovery recommendations.
+- Testing instructions.
+
+Create a complete `.env.example` without real secrets.
+
+The application must fail safely with a clear error if the database is unavailable. Do not silently fall back to in-memory data or mock records.
+
+---
+
+# 32. Implementation Plan
+
+Implement the project in the following order.
+
+### Phase 1 — Foundation
+- Project setup.
+- Frontend and backend configuration.
+- MongoDB Atlas connection.
+- Authentication.
+- Admin layout and navigation.
+- Database models and validation.
+
+### Phase 2 — Institute Management
+- Dashboard.
+- Students.
+- Faculty.
+- Courses and modules.
+- Batch schedules.
+- Student reports and cancellation.
+- Audit logs for data changes.
+
+### Phase 3 — Question Bank
+- Excel upload.
+- Workbook validation.
+- Question import.
+- Module-wise question bank management.
+- Question selection logic.
+
+### Phase 4 — Examination Engine
+- Exam credentials.
+- Student exam login.
+- Module-wise examination.
+- Random question selection.
+- One-hour timer.
+- Answer persistence.
+- Exam submission and history.
+
+### Phase 5 — Results and Re-Exams
+- Automatic objective evaluation.
+- Practical code submission.
+- Admin practical evaluation.
+- Final results.
+- Pass/fail calculation.
+- Re-Exam workflow.
+
+### Phase 6 — Quality and Deployment
+- Analytics.
+- Reports and exports.
+- Security review.
+- Automated tests.
+- Responsive UI testing.
+- Production configuration.
+- Documentation.
+
+Complete and test each phase before moving to the next. Maintain a working application throughout development.
+
+---
+
+# 33. Final Instructions to the AI Developer
+
+Build the complete working application according to this specification.
+
+Important rules:
+
+1. Do not stop after generating the UI.
+2. Do not use mock APIs or localStorage as a replacement for the actual database.
+3. Connect all functional pages to the Node.js backend and MongoDB Atlas.
+4. Implement all important business rules on the server.
+5. Use real CRUD operations for students, faculty, courses, modules, and batches.
+6. Implement the complete examination workflow, including Excel question import, randomized questions, timer, saved answers, practical code submissions, manual evaluation, results, and re-examinations.
+7. Preserve historical data and exam attempts.
+8. Require reasons for important administrative changes and write audit logs.
+9. Keep the Attendance section disabled for this phase.
+10. Do not claim that a feature is complete unless it has actually been implemented and tested.
+11. If a requirement is ambiguous, document the assumption and choose a consistent, safe implementation.
+12. If the existing project already contains code, inspect it first and integrate changes without unnecessarily replacing working functionality.
+13. Never hardcode production credentials or sensitive data.
+14. Provide clear instructions for running and deploying the application.
+
+### Expected Deliverables
+
+- Complete frontend source code.
+- Complete backend source code.
+- MongoDB Atlas integration.
+- Mongoose models and indexes.
+- Working REST APIs.
+- Admin authentication.
+- Student and faculty management.
+- Course and batch management.
+- Excel question bank.
+- Fully working online exam interface.
+- Exam timer and answer persistence.
+- Practical code editor and evaluation.
+- Results and Re-Exam management.
+- Audit logs.
+- Dashboard analytics.
+- Input validation and error handling.
+- Automated tests for critical functionality.
+- `.env.example`.
+- README with setup and deployment instructions.
+
+**Final Goal:** Deliver a reliable, secure, database-connected Institute Management & Exam System that is ready for real-world institute operations and can be extended in future phases.
