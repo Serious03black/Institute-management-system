@@ -168,6 +168,27 @@ export interface QuestionBank {
   sectionCounts: { basic: number; mid: number; advanced: number; practical: number };
 }
 
+export interface QuestionItem {
+  _id: string;
+  questionBankId: string;
+  courseId: string;
+  moduleId: string;
+  section: 'BASIC' | 'MID' | 'ADVANCED' | 'PRACTICAL';
+  questionNumber: number;
+  questionText: string;
+  options?: {
+    A: string;
+    B: string;
+    C: string;
+    D: string;
+  };
+  correctOption?: 'A' | 'B' | 'C' | 'D';
+  maximumMarks: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface AuditLog {
   _id: string;
   actorId: string;

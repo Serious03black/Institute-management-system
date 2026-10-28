@@ -31,5 +31,14 @@ router.use(adminAuth);
 router.post('/upload', upload.single('file'), qbCtrl.uploadQuestionBank);
 router.post('/auto-generate', qbCtrl.autoGenerateBank);
 router.get('/', qbCtrl.getQuestionBanks);
+
+// Question-specific operations
+router.put('/questions/:id', qbCtrl.updateQuestion);
+router.delete('/questions/:id', qbCtrl.deleteQuestion);
+
+// Question Bank specific operations
 router.get('/:id/questions', qbCtrl.getQuestionBankQuestions);
+router.post('/:id/questions', qbCtrl.addQuestionToBank);
+router.delete('/:id', qbCtrl.deleteQuestionBank);
+
 export default router;

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Plus, BookOpen, Edit, ChevronDown, ChevronUp, FileSpreadsheet,
-  UploadCloud, CheckCircle, AlertCircle, Layers, Check, Download, Sparkles, AlertTriangle
+  UploadCloud, CheckCircle, AlertCircle, Layers, Check, Download, Sparkles, AlertTriangle, Eye
 } from 'lucide-react';
 import { PageHeader, Badge, Card, Spinner, ErrorMessage } from '../../components/ui/Cards';
 import { Button } from '../../components/ui/Button';
@@ -12,6 +13,7 @@ import type { Course, Module } from '../../types';
 import toast from 'react-hot-toast';
 
 export function CoursesPage() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<'list' | 'add'>('list');
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
@@ -386,7 +388,7 @@ export function CoursesPage() {
                                   </p>
                                 </div>
 
-                                <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+                                <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2">
                                   <button
                                     onClick={() => {
                                       setQbModal({ course, module: mod });
@@ -396,7 +398,17 @@ export function CoursesPage() {
                                     className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
                                   >
                                     <FileSpreadsheet className="w-3.5 h-3.5" />
-                                    <span>Upload Question Bank</span>
+                                    <span>Upload Bank</span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      navigate(`/settings?tab=questionbank&moduleId=${mod.moduleId}`);
+                                    }}
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-white transition-colors"
+                                    title="View and Edit questions in Question Bank Hub"
+                                  >
+                                    <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                                    <span>View Questions</span>
                                   </button>
                                 </div>
                               </div>

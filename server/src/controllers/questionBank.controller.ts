@@ -54,42 +54,137 @@ function normalizeCorrectOption(raw: string): string {
   return val;
 }
 
+interface ColumnMapping {
+  numCol?: number;
+  questionCol: number;
+  optACol?: number;
+  optBCol?: number;
+  optCCol?: number;
+  optDCol?: number;
+  correctCol?: number;
+}
+
+function detectColumns(worksheet: ExcelJS.Worksheet): ColumnMapping {
+  const headerRow = worksheet.getRow(1);
+  const headers: { col: number; text: string }[] = [];
+  headerRow.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+    headers.push({ col: colNumber, text: getCellValue(cell).toLowerCase().trim() });
+  });
+
+  let numCol: number | undefined;
+  let questionCol: number | undefined;
+  let optACol: number | undefined;
+  let optBCol: number | undefined;
+  let optCCol: number | undefined;
+  let optDCol: number | undefined;
+  let correctCol: number | undefined;
+
+  for (const h of headers) {
+    const t = h.text;
+    if (/^(question\s*(no|number|num|\#)|q\.?\s*no\.?|sr\.?\s*no\.?|s\.?\s*no\.?|id|#)$/i.test(t)) {
+      numCol = h.col;
+    } else if (/^(question(\s*text|\s*statement|\s*title|\s*prompt)?|problem|statement)$/i.test(t)) {
+      if (!questionCol || /text|statement|prompt/i.test(t)) {
+        questionCol = h.col;
+      }
+    } else if (/^(option\s*a|opt\s*a|\(a\)|a)$/i.test(t)) {
+      optACol = h.col;
+    } else if (/^(option\s*b|opt\s*b|\(b\)|b)$/i.test(t)) {
+      optBCol = h.col;
+    } else if (/^(option\s*c|opt\s*c|\(c\)|c)$/i.test(t)) {
+      optCCol = h.col;
+    } else if (/^(option\s*d|opt\s*d|\(d\)|d)$/i.test(t)) {
+      optDCol = h.col;
+    } else if (/^(correct\s*(option|answer|choice)?|answer|ans|correct)$/i.test(t)) {
+      correctCol = h.col;
+    }
+  }
+
+  // Fallbacks if header matching did not detect columns:
+  const row2 = worksheet.getRow(2);
+  const cell1 = getCellValue(row2.getCell(1));
+  const cell2 = getCellValue(row2.getCell(2));
+
+  if (!questionCol) {
+    if (!isNaN(Number(cell1)) && cell1 !== '' && cell2.length > 5) {
+      numCol = 1;
+      questionCol = 2;
+    } else {
+      questionCol = 1;
+    }
+  }
+
+  if (!optACol) {
+    if (questionCol === 1) {
+      optACol = 2;
+      optBCol = 3;
+      optCCol = 4;
+      optDCol = 5;
+    } else {
+      optACol = 3;
+      optBCol = 4;
+      optCCol = 5;
+      optDCol = 6;
+    }
+  }
+
+  if (!correctCol) {
+    const possibleCols = [6, 7, 8];
+    for (const c of possibleCols) {
+      const val = normalizeCorrectOption(getCellValue(row2.getCell(c)));
+      if (['A', 'B', 'C', 'D'].includes(val)) {
+        correctCol = c;
+        break;
+      }
+    }
+    if (!correctCol) {
+      correctCol = optDCol ? optDCol + 1 : 7;
+    }
+  }
+
+  return { numCol, questionCol, optACol, optBCol, optCCol, optDCol, correctCol };
+}
+
 async function parseSheet(worksheet: ExcelJS.Worksheet, section: SectionName): Promise<ParsedQuestion[]> {
   const questions: ParsedQuestion[] = [];
   const seenNumbers = new Set<number>();
+  const mapping = detectColumns(worksheet);
 
   worksheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return; // skip header row
 
-    const cell1 = getCellValue(row.getCell(1));
-    const cell2 = getCellValue(row.getCell(2));
-
-    // Silently skip completely empty rows
-    if (!cell1 && !cell2) return;
-
-    let qNum = Number(cell1);
-    if (!cell1 || isNaN(qNum)) {
-      qNum = questions.length + 1;
+    // Question number
+    let qNum = questions.length + 1;
+    if (mapping.numCol) {
+      const cellNum = getCellValue(row.getCell(mapping.numCol));
+      const parsedNum = Number(cellNum);
+      if (cellNum && !isNaN(parsedNum)) {
+        qNum = parsedNum;
+      }
     }
 
-    const qText = cell2;
-    const errors: string[] = [];
+    const qText = getCellValue(row.getCell(mapping.questionCol));
 
+    // Silently skip completely empty rows
+    const cellA = mapping.optACol ? getCellValue(row.getCell(mapping.optACol)) : '';
+    if (!qText && !cellA) return;
+
+    const errors: string[] = [];
     if (!qText) {
       errors.push(`Row ${rowNumber}: Empty question text`);
     }
+
     if (seenNumbers.has(qNum)) {
-      // In case of duplicate number in sheet, assign next sequential number rather than blocking
       qNum = questions.length + 1;
     }
     seenNumbers.add(qNum);
 
     if (section !== 'PRACTICAL') {
-      const A = getCellValue(row.getCell(3));
-      const B = getCellValue(row.getCell(4));
-      const C = getCellValue(row.getCell(5));
-      const D = getCellValue(row.getCell(6));
-      const rawCorrect = getCellValue(row.getCell(7));
+      const A = mapping.optACol ? getCellValue(row.getCell(mapping.optACol)) : '';
+      const B = mapping.optBCol ? getCellValue(row.getCell(mapping.optBCol)) : '';
+      const C = mapping.optCCol ? getCellValue(row.getCell(mapping.optCCol)) : '';
+      const D = mapping.optDCol ? getCellValue(row.getCell(mapping.optDCol)) : '';
+      const rawCorrect = mapping.correctCol ? getCellValue(row.getCell(mapping.correctCol)) : '';
       const correct = normalizeCorrectOption(rawCorrect);
 
       if (!['A', 'B', 'C', 'D'].includes(correct)) {
@@ -108,12 +203,31 @@ async function parseSheet(worksheet: ExcelJS.Worksheet, section: SectionName): P
         errors,
       });
     } else {
-      questions.push({
-        questionNumber: qNum,
-        questionText: qText,
-        section,
-        errors,
-      });
+      // Practical section: Check if this sheet has MCQ options or open coding prompt
+      const A = mapping.optACol ? getCellValue(row.getCell(mapping.optACol)) : '';
+      const B = mapping.optBCol ? getCellValue(row.getCell(mapping.optBCol)) : '';
+      const C = mapping.optCCol ? getCellValue(row.getCell(mapping.optCCol)) : '';
+      const D = mapping.optDCol ? getCellValue(row.getCell(mapping.optDCol)) : '';
+      const rawCorrect = mapping.correctCol ? getCellValue(row.getCell(mapping.correctCol)) : '';
+      const correct = normalizeCorrectOption(rawCorrect);
+
+      if (A && B && C && D && ['A', 'B', 'C', 'D'].includes(correct)) {
+        questions.push({
+          questionNumber: qNum,
+          questionText: qText,
+          options: { A, B, C, D },
+          correctOption: correct,
+          section,
+          errors,
+        });
+      } else {
+        questions.push({
+          questionNumber: qNum,
+          questionText: qText,
+          section,
+          errors,
+        });
+      }
     }
   });
 
@@ -299,6 +413,17 @@ export const getQuestionBanks = async (req: AuthRequest, res: Response): Promise
   }
 };
 
+async function recalculateBankCounts(bankId: any): Promise<void> {
+  const bank = await QuestionBank.findById(bankId);
+  if (!bank) return;
+  const basic = await Question.countDocuments({ questionBankId: bank._id, section: 'BASIC', status: 'ACTIVE' });
+  const mid = await Question.countDocuments({ questionBankId: bank._id, section: 'MID', status: 'ACTIVE' });
+  const advanced = await Question.countDocuments({ questionBankId: bank._id, section: 'ADVANCED', status: 'ACTIVE' });
+  const practical = await Question.countDocuments({ questionBankId: bank._id, section: 'PRACTICAL', status: 'ACTIVE' });
+  bank.sectionCounts = { basic, mid, advanced, practical };
+  await bank.save();
+}
+
 export const getQuestionBankQuestions = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const bank = await QuestionBank.findById(req.params.id);
@@ -306,10 +431,171 @@ export const getQuestionBankQuestions = async (req: AuthRequest, res: Response):
       res.status(404).json({ success: false, message: 'Question bank not found' });
       return;
     }
-    const questions = await Question.find({ questionBankId: bank._id }).select('-correctOption');
+    const questions = await Question.find({ questionBankId: bank._id })
+      .select('+correctOption')
+      .sort({ questionNumber: 1 });
     res.json({ success: true, data: questions });
   } catch {
     res.status(500).json({ success: false, message: 'Failed to fetch questions' });
+  }
+};
+
+export const updateQuestion = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { questionText, section, options, correctOption, maximumMarks } = req.body;
+
+    const question = await Question.findById(id).select('+correctOption');
+    if (!question) {
+      res.status(404).json({ success: false, message: 'Question not found' });
+      return;
+    }
+
+    if (questionText !== undefined) question.questionText = questionText.trim();
+    if (section && ['BASIC', 'MID', 'ADVANCED', 'PRACTICAL'].includes(section)) {
+      question.section = section;
+    }
+    if (options !== undefined) {
+      question.options = {
+        A: options?.A?.trim() || '',
+        B: options?.B?.trim() || '',
+        C: options?.C?.trim() || '',
+        D: options?.D?.trim() || '',
+      };
+    }
+    if (correctOption !== undefined) {
+      question.correctOption = ['A', 'B', 'C', 'D'].includes(String(correctOption).toUpperCase())
+        ? (String(correctOption).toUpperCase() as 'A' | 'B' | 'C' | 'D')
+        : undefined;
+    }
+    if (maximumMarks !== undefined && !isNaN(Number(maximumMarks))) {
+      question.maximumMarks = Number(maximumMarks);
+    }
+
+    await question.save();
+    await recalculateBankCounts(question.questionBankId);
+
+    await writeAuditLog({
+      actorId: req.admin?.adminId || 'admin',
+      action: 'QUESTION_UPDATED',
+      entityType: 'Question',
+      entityId: question._id.toString(),
+      newValues: {
+        questionText: question.questionText,
+        section: question.section,
+        options: question.options,
+        correctOption: question.correctOption,
+        maximumMarks: question.maximumMarks,
+      },
+    });
+
+    res.json({ success: true, message: 'Question updated successfully', data: question });
+  } catch (err) {
+    console.error('Update question error:', err);
+    res.status(500).json({ success: false, message: 'Failed to update question' });
+  }
+};
+
+export const deleteQuestion = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const question = await Question.findById(id);
+    if (!question) {
+      res.status(404).json({ success: false, message: 'Question not found' });
+      return;
+    }
+
+    const bankId = question.questionBankId;
+    await Question.findByIdAndDelete(id);
+    await recalculateBankCounts(bankId);
+
+    await writeAuditLog({
+      actorId: req.admin?.adminId || 'admin',
+      action: 'QUESTION_DELETED',
+      entityType: 'Question',
+      entityId: id,
+      newValues: { questionBankId: bankId.toString() },
+    });
+
+    res.json({ success: true, message: 'Question deleted successfully' });
+  } catch (err) {
+    console.error('Delete question error:', err);
+    res.status(500).json({ success: false, message: 'Failed to delete question' });
+  }
+};
+
+export const addQuestionToBank = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const bank = await QuestionBank.findById(req.params.id);
+    if (!bank) {
+      res.status(404).json({ success: false, message: 'Question bank not found' });
+      return;
+    }
+
+    const { questionText, section, options, correctOption, maximumMarks } = req.body;
+    if (!questionText || !section) {
+      res.status(400).json({ success: false, message: 'Question text and section are required' });
+      return;
+    }
+
+    const lastQ = await Question.findOne({ questionBankId: bank._id }).sort({ questionNumber: -1 });
+    const questionNumber = (lastQ?.questionNumber || 0) + 1;
+
+    const newQ = await Question.create({
+      questionBankId: bank._id,
+      courseId: bank.courseId,
+      moduleId: bank.moduleId,
+      section,
+      questionNumber,
+      questionText: questionText.trim(),
+      options: section !== 'PRACTICAL' ? options : undefined,
+      correctOption: section !== 'PRACTICAL' ? correctOption : undefined,
+      maximumMarks: maximumMarks ? Number(maximumMarks) : (section === 'PRACTICAL' ? 5 : 2),
+      status: 'ACTIVE',
+    });
+
+    await recalculateBankCounts(bank._id);
+
+    await writeAuditLog({
+      actorId: req.admin?.adminId || 'admin',
+      action: 'QUESTION_CREATED',
+      entityType: 'Question',
+      entityId: newQ._id.toString(),
+      newValues: { questionNumber, section, questionText },
+    });
+
+    res.status(201).json({ success: true, message: 'Question added successfully', data: newQ });
+  } catch (err) {
+    console.error('Add question error:', err);
+    res.status(500).json({ success: false, message: 'Failed to add question' });
+  }
+};
+
+export const deleteQuestionBank = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const bank = await QuestionBank.findById(req.params.id);
+    if (!bank) {
+      res.status(404).json({ success: false, message: 'Question bank not found' });
+      return;
+    }
+
+    await Question.deleteMany({ questionBankId: bank._id });
+    await QuestionBank.findByIdAndDelete(bank._id);
+
+    // If module referenced this bank, reset reference
+    await Module.findByIdAndUpdate(bank.moduleId, { $unset: { questionBankId: 1 } });
+
+    await writeAuditLog({
+      actorId: req.admin?.adminId || 'admin',
+      action: 'QUESTION_BANK_DELETED',
+      entityType: 'QuestionBank',
+      entityId: bank._id.toString(),
+    });
+
+    res.json({ success: true, message: 'Question bank and all associated questions deleted successfully' });
+  } catch (err) {
+    console.error('Delete question bank error:', err);
+    res.status(500).json({ success: false, message: 'Failed to delete question bank' });
   }
 };
 
