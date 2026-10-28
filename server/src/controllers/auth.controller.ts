@@ -52,13 +52,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: isProd,
-      sameSite: 'lax',
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 15 * 60 * 1000,
     });
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: isProd,
-      sameSite: 'lax',
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/api/v1/auth/refresh',
     });
@@ -106,11 +106,11 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
     await admin.save();
 
     const isProd = config.NODE_ENV === 'production';
-    res.cookie('accessToken', accessToken, { httpOnly: true, secure: isProd, sameSite: 'lax', maxAge: 15 * 60 * 1000 });
+    res.cookie('accessToken', accessToken, { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax', maxAge: 15 * 60 * 1000 });
     res.cookie('refreshToken', newRefresh, {
       httpOnly: true,
       secure: isProd,
-      sameSite: 'lax',
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/api/v1/auth/refresh',
     });
@@ -126,8 +126,9 @@ export const logout = async (req: AuthRequest, res: Response): Promise<void> => 
     if (req.admin) {
       await Admin.findOneAndUpdate({ adminId: req.admin.adminId }, { refreshTokenHash: undefined });
     }
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken', { path: '/api/v1/auth/refresh' });
+    const isProd = config.NODE_ENV === 'production';
+    res.clearCookie('accessToken', { secure: isProd, sameSite: isProd ? 'none' : 'lax' });
+    res.clearCookie('refreshToken', { path: '/api/v1/auth/refresh', secure: isProd, sameSite: isProd ? 'none' : 'lax' });
     res.json({ success: true, message: 'Logged out successfully' });
   } catch {
     res.status(500).json({ success: false, message: 'Logout failed' });

@@ -160,7 +160,7 @@ export const examLogin = async (req: Request, res: Response): Promise<void> => {
     const token = jwt.sign(payload, config.JWT_SECRET + '_exam', { expiresIn: '4h' });
 
     const isProd = config.NODE_ENV === 'production';
-    res.cookie('examToken', token, { httpOnly: true, secure: isProd, sameSite: 'lax', maxAge: 4 * 60 * 60 * 1000 });
+    res.cookie('examToken', token, { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax', maxAge: 4 * 60 * 60 * 1000 });
 
     res.json({ success: true, data: { token, studentInfo: cred.studentId } });
   } catch {

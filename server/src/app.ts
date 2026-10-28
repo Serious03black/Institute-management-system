@@ -7,7 +7,7 @@ import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import fs from 'fs';
-import { connectDB } from './config/database';
+import { connectDB, isDbConnected } from './config/database';
 import config from './config';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
@@ -27,6 +27,9 @@ import auditLogRoutes from './routes/auditLog.routes';
 
 const app = express();
 
+// Trust proxy for Vercel/reverse proxy deployments (preserves HTTPS for cookies & rate limiters)
+app.set('trust proxy', 1);
+
 // Ensure upload dir exists
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -38,6 +41,7 @@ app.use(
     origin: (origin, callback) => {
       const allowedOrigins = [
         config.CLIENT_URL,
+        'https://techmindssoftwreindia.vercel.app',
         'http://localhost:5173',
         'http://127.0.0.1:5173',
         'http://localhost:3000',
@@ -52,6 +56,18 @@ app.use(
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   })
 );
+
+// Serverless DB connection check
+app.use(async (_req, _res, next) => {
+  if (!isDbConnected() && config.MONGODB_URI) {
+    try {
+      await connectDB();
+    } catch {
+      // Allow request to proceed, controllers/error handlers will respond if DB is down
+    }
+  }
+  next();
+});
 
 // Rate limiting — more relaxed in development
 const isDev = config.NODE_ENV !== 'production';
@@ -99,13 +115,15 @@ app.use(errorHandler);
 
 const PORT = Number(config.PORT);
 
-// Always start the server; log DB connection error but don't block
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT} [${config.NODE_ENV}]`);
-});
+// Only listen on port in non-serverless environments
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT} [${config.NODE_ENV}]`);
+  });
 
-connectDB().catch((err) => {
-  console.error('⚠️  Running without database connection:', err.message);
-});
+  connectDB().catch((err) => {
+    console.error('⚠️  Running without database connection:', err.message);
+  });
+}
 
 export default app;
