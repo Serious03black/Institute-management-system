@@ -35,7 +35,19 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 app.use(helmet());
 app.use(
   cors({
-    origin: config.CLIENT_URL,
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        config.CLIENT_URL,
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:3000',
+      ];
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Permissive in dev, credentials preserved
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   })
@@ -75,6 +87,7 @@ app.use('/api/v1/courses', courseRoutes);
 app.use('/api/v1/modules', moduleRoutes);
 app.use('/api/v1/batches', batchRoutes);
 app.use('/api/v1/question-banks', questionBankRoutes);
+app.use('/api/question-banks', questionBankRoutes);
 app.use('/api/v1/exams', examRoutes);
 app.use('/api/v1/exam', examRoutes);
 app.use('/api/v1/results', resultsRoutes);

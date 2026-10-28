@@ -21,7 +21,12 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
+    const isAuthRoute =
+      original?.url?.includes('/auth/login') ||
+      original?.url?.includes('/auth/refresh') ||
+      original?.url?.includes('/auth/me');
+
+    if (error.response?.status === 401 && !original._retry && !isAuthRoute) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           pendingQueue.push({ resolve, reject });
@@ -44,7 +49,9 @@ api.interceptors.response.use(
         pendingQueue.forEach((p) => p.reject(refreshErr));
         pendingQueue = [];
         localStorage.removeItem('accessToken');
-        window.location.href = '/login';
+        if (window.location.pathname !== '/login' && !window.location.pathname.startsWith('/exam')) {
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Upload, Eye, CheckCircle, AlertCircle, Sparkles, Sliders, Shield, User, FileSpreadsheet } from 'lucide-react';
+import { Save, Upload, Eye, CheckCircle, AlertCircle, Sparkles, Sliders, Shield, User, FileSpreadsheet, Download } from 'lucide-react';
 import { PageHeader, Badge, Card, Spinner } from '../../components/ui/Cards';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -338,11 +338,22 @@ function QuestionBankSettings() {
   return (
     <div className="space-y-6 max-w-3xl">
       <Card className="p-6 space-y-4">
-        <div className="pb-3 border-b border-white/10">
-          <h3 className="text-base font-bold text-white font-heading">Import Excel Question Bank</h3>
-          <p className="text-xs text-slate-400">
-            Upload verified Excel spreadsheets containing Basic, Mid, Advanced, and Practical sections
-          </p>
+        <div className="pb-3 border-b border-white/10 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-bold text-white font-heading">Import Excel Question Bank</h3>
+            <p className="text-xs text-slate-400">
+              Upload verified Excel spreadsheets containing Basic, Mid, Advanced, and Practical sections
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => window.open('/api/v1/question-banks/template', '_blank')}
+            icon={<Download className="w-3.5 h-3.5 text-cyan-400" />}
+          >
+            Download Sample Template (.xlsx)
+          </Button>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">

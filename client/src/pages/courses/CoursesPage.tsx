@@ -135,7 +135,7 @@ export function CoursesPage() {
   };
 
   const handleDownloadTemplate = () => {
-    window.open('/api/question-banks/template', '_blank');
+    window.open('/api/v1/question-banks/template', '_blank');
   };
 
   const handleAutoGenerate = async () => {

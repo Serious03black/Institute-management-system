@@ -9,24 +9,28 @@ import type { Course, Faculty, Batch } from '../../types';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
+const phoneRegex = /^(?:(?:\+|0{0,2})91(\s*[-]\s*)?|[0]?)?[6789]\d{9}$/;
+
 const schema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  address: z.string().min(5, 'Address required'),
-  mobile: z.string().regex(/^\d{10}$/, 'Enter valid 10-digit mobile number'),
-  parentMobile: z.string().regex(/^\d{10}$/, 'Enter valid 10-digit parent mobile'),
+  address: z.string().min(5, 'Address required (minimum 5 characters)'),
+  mobile: z.string().min(10, 'Mobile number must be at least 10 digits')
+    .refine((val) => phoneRegex.test(val.trim()), 'Enter valid 10-digit mobile number'),
+  parentMobile: z.string().optional()
+    .refine((val) => !val || phoneRegex.test(val.trim()), 'Enter valid 10-digit parent mobile'),
   dateOfBirth: z.string().min(1, 'Date of birth required'),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   education: z.string().min(2, 'Education required'),
-  courseId: z.string().min(1, 'Course required'),
+  courseId: z.string().min(1, 'Please select a course'),
   moduleIds: z.array(z.string()).min(1, 'Select at least one module'),
-  registrationFee: z.number().min(0),
-  courseFee: z.number().min(0, 'Course fee required'),
+  registrationFee: z.coerce.number().min(0, 'Registration fee must be 0 or more').default(100),
+  courseFee: z.coerce.number().min(0, 'Course fee must be 0 or more').default(0),
   joiningDate: z.string().min(1, 'Joining date required'),
   courseDuration: z.string().min(1, 'Course duration required'),
   batchType: z.enum(['DAILY', 'ALTERNATE', 'WEEKLY']),
   batchId: z.string().optional(),
   batchTime: z.string().optional(),
-  facultyId: z.string().min(1, 'Faculty required'),
+  facultyId: z.string().min(1, 'Please select an assigned faculty'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -40,9 +44,18 @@ export function AddStudentForm({ courses, faculties, onSuccess }: {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [createdStudentId, setCreatedStudentId] = useState('');
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
   const { register, handleSubmit, control, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { registrationFee: 100, moduleIds: [], batchType: 'DAILY' },
+    defaultValues: {
+      registrationFee: 100,
+      courseFee: 0,
+      moduleIds: [],
+      batchType: 'DAILY',
+      joiningDate: todayStr,
+      courseDuration: '3 Months',
+    },
   });
 
   const watchCourseId = watch('courseId');
@@ -52,7 +65,14 @@ export function AddStudentForm({ courses, faculties, onSuccess }: {
     if (watchCourseId) {
       const course = courses.find(c => c._id === watchCourseId);
       setSelectedCourse(course || null);
-      setValue('moduleIds', []);
+      if (course && Array.isArray(course.moduleIds)) {
+        const activeIds = (course.moduleIds as { _id: string; status?: string }[])
+          .filter(m => m.status !== 'INACTIVE')
+          .map(m => m._id);
+        setValue('moduleIds', activeIds);
+      } else {
+        setValue('moduleIds', []);
+      }
     }
   }, [watchCourseId, courses, setValue]);
 
@@ -63,21 +83,43 @@ export function AddStudentForm({ courses, faculties, onSuccess }: {
     }
   }, [watchBatchType]);
 
+  const onInvalid = (fieldErrors: typeof errors) => {
+    const errorKeys = Object.keys(fieldErrors) as (keyof FormData)[];
+    if (errorKeys.length > 0) {
+      const firstError = fieldErrors[errorKeys[0]]?.message || 'Please check the form for errors';
+      toast.error(firstError);
+    }
+  };
+
   const onSubmit = async (values: FormData) => {
     try {
+      const mobileClean = values.mobile.replace(/\D/g, '').slice(-10);
+      const parentMobileClean = values.parentMobile?.replace(/\D/g, '').slice(-10) || mobileClean;
+
       const payload = {
         personalInfo: {
-          name: values.name, address: values.address, mobile: values.mobile,
-          parentMobile: values.parentMobile, dateOfBirth: values.dateOfBirth,
-          email: values.email || undefined, education: values.education,
+          name: values.name.trim(),
+          address: values.address.trim(),
+          mobile: mobileClean,
+          parentMobile: parentMobileClean,
+          dateOfBirth: values.dateOfBirth,
+          email: values.email?.trim() || undefined,
+          education: values.education.trim(),
         },
         enrollment: {
-          courseId: values.courseId, moduleIds: values.moduleIds,
-          joiningDate: values.joiningDate, courseDuration: values.courseDuration,
-          batchType: values.batchType, batchId: values.batchId || undefined,
-          batchTime: values.batchTime || undefined, facultyId: values.facultyId,
+          courseId: values.courseId,
+          moduleIds: values.moduleIds,
+          joiningDate: values.joiningDate,
+          courseDuration: values.courseDuration,
+          batchType: values.batchType,
+          batchId: values.batchId || undefined,
+          batchTime: values.batchTime || undefined,
+          facultyId: values.facultyId,
         },
-        fees: { registrationFee: values.registrationFee, courseFee: values.courseFee },
+        fees: {
+          registrationFee: Number(values.registrationFee) || 100,
+          courseFee: Number(values.courseFee) || 0,
+        },
       };
       const { data } = await api.post('/students', payload);
       setCreatedStudentId(data.data.studentId);
@@ -104,7 +146,7 @@ export function AddStudentForm({ courses, faculties, onSuccess }: {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
       {/* Personal Info */}
       <Card className="p-6">
         <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-5 pb-3 border-b border-white/10 flex items-center gap-2 font-display">
@@ -140,9 +182,33 @@ export function AddStudentForm({ courses, faculties, onSuccess }: {
           />
           {selectedCourse && (
             <div>
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 block font-display">
-                Select Modules * <span className="text-xs text-slate-500 lowercase font-normal">(check all applicable)</span>
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block font-display">
+                  Select Modules * <span className="text-xs text-slate-500 lowercase font-normal">(check all applicable)</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allIds = (selectedCourse.moduleIds as { _id: string; status?: string }[])
+                        .filter(m => m.status !== 'INACTIVE')
+                        .map(m => m._id);
+                      setValue('moduleIds', allIds, { shouldValidate: true });
+                    }}
+                    className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium transition-colors cursor-pointer"
+                  >
+                    Select All
+                  </button>
+                  <span className="text-slate-600 text-[11px]">|</span>
+                  <button
+                    type="button"
+                    onClick={() => setValue('moduleIds', [], { shouldValidate: true })}
+                    className="text-[11px] text-slate-400 hover:text-slate-300 transition-colors cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
               <div className="border border-white/10 rounded-xl p-3 space-y-2 max-h-44 overflow-y-auto bg-black/20">
                 {(selectedCourse.moduleIds as { _id: string; title: string }[]).filter(m => (m as { status?: string }).status !== 'INACTIVE').map((mod) => (
                   <label key={mod._id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/[0.04] cursor-pointer transition-colors">

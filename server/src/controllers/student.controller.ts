@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { Student } from '../models/Student';
@@ -12,23 +13,36 @@ export const createStudent = async (req: AuthRequest, res: Response): Promise<vo
   try {
     const { personalInfo, enrollment, fees } = req.body;
 
-    // Validate course and modules exist
-    const course = await Course.findById(enrollment.courseId);
+    if (!personalInfo || !enrollment) {
+      res.status(400).json({ success: false, message: 'Personal info and enrollment data are required' });
+      return;
+    }
+
+    if (!personalInfo.parentMobile) {
+      personalInfo.parentMobile = personalInfo.mobile;
+    }
+
+    // Validate course exists (support both _id and courseId)
+    const course = mongoose.isValidObjectId(enrollment.courseId)
+      ? await Course.findById(enrollment.courseId)
+      : await Course.findOne({ courseId: enrollment.courseId });
     if (!course) {
-      res.status(400).json({ success: false, message: 'Course not found' });
+      res.status(400).json({ success: false, message: 'Selected course not found' });
       return;
     }
 
     const modules = await Module.find({ _id: { $in: enrollment.moduleIds } });
-    if (modules.length !== enrollment.moduleIds.length) {
-      res.status(400).json({ success: false, message: 'One or more modules not found' });
+    if (modules.length === 0 && enrollment.moduleIds?.length > 0) {
+      res.status(400).json({ success: false, message: 'Selected course modules not found' });
       return;
     }
 
-    // Validate faculty exists
-    const faculty = await Faculty.findById(enrollment.facultyId);
+    // Validate faculty exists (support both _id and facultyId)
+    const faculty = mongoose.isValidObjectId(enrollment.facultyId)
+      ? await Faculty.findById(enrollment.facultyId)
+      : await Faculty.findOne({ facultyId: enrollment.facultyId });
     if (!faculty) {
-      res.status(400).json({ success: false, message: 'Faculty not found' });
+      res.status(400).json({ success: false, message: 'Selected faculty not found' });
       return;
     }
 
@@ -52,6 +66,8 @@ export const createStudent = async (req: AuthRequest, res: Response): Promise<vo
       personalInfo,
       enrollment: {
         ...enrollment,
+        courseId: course._id,
+        facultyId: faculty._id,
         courseTitleSnapshot: course.title,
         moduleSnapshots: modules.map((m) => ({ moduleId: m._id, title: m.title })),
         facultyNameSnapshot: faculty.name,
