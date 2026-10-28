@@ -9,13 +9,14 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import api from '../../services/api';
-import type { Course, Module } from '../../types';
+import type { Course, Module, QuestionBank } from '../../types';
 import toast from 'react-hot-toast';
 
 export function CoursesPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<'list' | 'add'>('list');
   const [courses, setCourses] = useState<Course[]>([]);
+  const [questionBanks, setQuestionBanks] = useState<QuestionBank[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
@@ -49,9 +50,13 @@ export function CoursesPage() {
     setLoading(true);
     setError('');
     try {
-      const { data } = await api.get('/courses');
-      const list = data.data || [];
+      const [coursesRes, banksRes] = await Promise.all([
+        api.get('/courses'),
+        api.get('/question-banks').catch(() => ({ data: { data: [] } })),
+      ]);
+      const list = coursesRes.data.data || [];
       setCourses(list);
+      setQuestionBanks(banksRes.data.data || []);
       if (list.length > 0 && !expandedCourse) {
         setExpandedCourse(list[0]._id);
       }
@@ -60,7 +65,7 @@ export function CoursesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [expandedCourse]);
 
   useEffect(() => {
     fetchCourses();
@@ -369,50 +374,98 @@ export function CoursesPage() {
                           </div>
 
                           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {(course.moduleIds as Module[]).map((mod, idx) => (
-                              <div
-                                key={mod._id}
-                                className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 hover:border-indigo-500/30 transition-all flex flex-col justify-between gap-3 group"
-                              >
-                                <div>
-                                  <div className="flex items-center justify-between gap-2 mb-1.5">
-                                    <span className="font-mono text-[10px] text-slate-400 bg-white/5 px-1.5 py-0.5 rounded">
-                                      {mod.moduleId}
-                                    </span>
-                                    <Badge variant={mod.status === 'ACTIVE' ? 'success' : 'default'} dot>
-                                      {mod.status}
-                                    </Badge>
-                                  </div>
-                                  <p className="font-semibold text-white text-xs leading-snug">
-                                    {mod.title}
-                                  </p>
-                                </div>
+                            {(course.moduleIds as Module[]).map((mod) => {
+                              const modBank = questionBanks.find(
+                                (b) =>
+                                  ((b.moduleId as unknown as { moduleId?: string })?.moduleId === mod.moduleId ||
+                                   (b.moduleId as unknown as { _id?: string })?._id === mod._id ||
+                                   (b.moduleId as unknown as string) === mod._id ||
+                                   b._id === mod.questionBankId) &&
+                                  b.status === 'ACTIVE'
+                              ) || questionBanks.find(
+                                (b) =>
+                                  (b.moduleId as unknown as { moduleId?: string })?.moduleId === mod.moduleId ||
+                                  (b.moduleId as unknown as { _id?: string })?._id === mod._id ||
+                                  (b.moduleId as unknown as string) === mod._id ||
+                                  b._id === mod.questionBankId
+                              );
 
-                                <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2">
-                                  <button
-                                    onClick={() => {
-                                      setQbModal({ course, module: mod });
-                                      setQbFile(null);
-                                      setQbResult(null);
-                                    }}
-                                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
-                                  >
-                                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                                    <span>Upload Bank</span>
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      navigate(`/settings?tab=questionbank&moduleId=${mod.moduleId}`);
-                                    }}
-                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-white transition-colors"
-                                    title="View and Edit questions in Question Bank Hub"
-                                  >
-                                    <Eye className="w-3.5 h-3.5 text-indigo-400" />
-                                    <span>View Questions</span>
-                                  </button>
+                              const hasBank = !!modBank;
+
+                              return (
+                                <div
+                                  key={mod._id}
+                                  className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 hover:border-indigo-500/30 transition-all flex flex-col justify-between gap-3 group"
+                                >
+                                  <div>
+                                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                                      <span className="font-mono text-[10px] text-slate-400 bg-white/5 px-1.5 py-0.5 rounded">
+                                        {mod.moduleId}
+                                      </span>
+                                      <div className="flex items-center gap-1.5">
+                                        {hasBank ? (
+                                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                            <Check className="w-2.5 h-2.5" />
+                                            Bank Loaded
+                                          </span>
+                                        ) : (
+                                          <span className="text-[10px] font-medium text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">
+                                            No Bank
+                                          </span>
+                                        )}
+                                        <Badge variant={mod.status === 'ACTIVE' ? 'success' : 'default'} dot>
+                                          {mod.status}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                    <p className="font-semibold text-white text-xs leading-snug">
+                                      {mod.title}
+                                    </p>
+                                  </div>
+
+                                  <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setQbModal({ course, module: mod });
+                                        setQbFile(null);
+                                        setQbResult(null);
+                                      }}
+                                      className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+                                    >
+                                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                                      <span>{hasBank ? 'Replace Bank' : 'Upload Bank'}</span>
+                                    </button>
+
+                                    {hasBank ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          navigate(
+                                            `/settings?tab=questionbank&bankId=${modBank._id}&moduleId=${mod.moduleId}`
+                                          );
+                                        }}
+                                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
+                                        title={`View and edit questions in ${modBank.sourceFileName || 'Question Bank Hub'}`}
+                                      >
+                                        <Eye className="w-3.5 h-3.5" />
+                                        <span>View Questions</span>
+                                      </button>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        disabled
+                                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 opacity-40 cursor-not-allowed"
+                                        title="No question bank uploaded for this module yet. Click 'Upload Bank' first."
+                                      >
+                                        <Eye className="w-3.5 h-3.5 text-slate-500" />
+                                        <span>No Questions</span>
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       </div>

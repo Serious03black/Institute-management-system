@@ -48,7 +48,7 @@ export const getCourses = async (req: AuthRequest, res: Response): Promise<void>
     if (status) filter.status = status;
     if (search) filter.$or = [{ title: { $regex: search, $options: 'i' } }];
     const courses = await Course.find(filter)
-      .populate('moduleIds', 'title moduleId status')
+      .populate('moduleIds', 'title moduleId status questionBankId')
       .sort({ createdAt: -1 });
 
     // Add enrolled student count
