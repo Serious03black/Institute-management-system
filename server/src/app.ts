@@ -30,9 +30,9 @@ const app = express();
 // Trust proxy for Vercel/reverse proxy deployments (preserves HTTPS for cookies & rate limiters)
 app.set('trust proxy', 1);
 
-// Ensure upload dir exists
-const uploadDir = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+// Vercel serverless: /var/task is read-only, use /tmp instead
+const uploadDir = process.env.VERCEL ? '/tmp/uploads' : path.join(process.cwd(), 'uploads');
+try { if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true }); } catch { /* skip if read-only */ }
 
 // Security
 app.use(helmet());

@@ -5,8 +5,14 @@ import * as qbCtrl from '../controllers/questionBank.controller';
 import { adminAuth } from '../middleware/auth';
 import config from '../config';
 
+import fs from 'fs';
+
+// Vercel serverless: /var/task is read-only, use /tmp instead
+const UPLOAD_DIR = process.env.VERCEL ? '/tmp/uploads' : path.join(process.cwd(), 'uploads/');
+try { if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true }); } catch { /* skip if read-only */ }
+
 const upload = multer({
-  dest: path.join(process.cwd(), 'uploads/'),
+  dest: UPLOAD_DIR,
   limits: { fileSize: config.UPLOAD_MAX_SIZE_MB * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
