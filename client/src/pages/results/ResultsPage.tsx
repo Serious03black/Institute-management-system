@@ -542,7 +542,7 @@ function PracticalEvalTab() {
 
                         <div>
                           <label className="text-[11px] font-semibold text-slate-400 block mb-1">
-                            Marks Awarded (Max 5)
+                            Marks Awarded (Max 10)
                           </label>
                           <input
                             type="number"
