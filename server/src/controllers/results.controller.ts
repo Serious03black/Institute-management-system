@@ -51,7 +51,7 @@ export const submitPracticalEvaluation = async (req: AuthRequest, res: Response)
     }
 
     const settings = await Settings.findOne({ key: 'APP_SETTINGS' });
-    const practicalMaxPerQ = (settings?.exam?.practicalMaxMarks || 10) / 2; // per question
+    const practicalMaxPerQ = (settings?.exam?.practicalMaxMarks || 10); // per question
 
     // Validate marks
     let totalAwarded = 0;
