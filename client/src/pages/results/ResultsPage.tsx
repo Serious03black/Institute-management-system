@@ -547,7 +547,7 @@ function PracticalEvalTab() {
                           <input
                             type="number"
                             min={0}
-                            max={5}
+                            max={10}
                             value={markEntry.awardedMarks}
                             onChange={(e) =>
                               setMarks((ms) =>
